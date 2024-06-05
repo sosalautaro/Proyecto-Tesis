@@ -40,3 +40,4 @@ void loop() {
 }
 
 // nota: este codigo es meramente de prueba ya que el circuito se montara en torno a un ESP32-S
+// LINK PARA ACCEDER A LA SIMULACION Y PODER MODIFICARLA: https://www.tinkercad.com/things/h4rAVSWh3fz-circuito-basico-proyecto/editel?sharecode=evd_b6Vd1xKNHotdkKhQQHzdbwRfuI2DkHQz9EfMBnU
