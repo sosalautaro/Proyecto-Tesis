@@ -1,0 +1,143 @@
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+const char* ssid = "tu_SSID";
+const char* password = "tu_contraseña";
+const char* mqttServer = "<IP>"; // Reemplaza con la IP de tu broker
+const int mqttPort = 1883;
+const char* mqttTopicHumedad = "sensor/humedad";
+const char* mqttTopicRelay = "sensor/relay";
+const char* mqttTopicControl = "sensor/control";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+const int soilMoisturePin = 34;  // GPIO34
+const int relayPin = 27;         // Pin GPIO para el relé, puedes cambiarlo según tu configuración
+const int numReadings = 10;      // Número de lecturas para la media móvil
+int soilMoistureReadings[numReadings]; // Arreglo para almacenar las lecturas
+int currentIndex = 0;            // Índice actual en el arreglo
+int total = 0;                   // Suma total de las lecturas
+
+const int wetValue = 900;  // Valor correspondiente a suelo húmedo
+const int dryValue = 2525; // Valor correspondiente a suelo seco
+
+// Dirección I2C de la pantalla LCD (ajusta según tu dispositivo)
+#define LCD_ADDRESS 0x27
+
+// Configuración del LCD 16x2
+LiquidCrystal_I2C lcd(LCD_ADDRESS, 16, 2);
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  String message;
+  for (unsigned int i = 0; i < length; i++) {
+    message += (char)payload[i];
+  }
+
+  if (String(topic) == mqttTopicControl) {
+    if (message == "ON") {
+      digitalWrite(relayPin, HIGH);
+      Serial.println("Relay turned ON via MQTT");
+    } else if (message == "OFF") {
+      digitalWrite(relayPin, LOW);
+      Serial.println("Relay turned OFF via MQTT");
+    }
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi conectado");
+  Serial.println("IP local:");
+  Serial.println(WiFi.localIP());
+
+  client.setServer(mqttServer, mqttPort);
+  client.setCallback(callback);
+
+  Wire.begin(21, 22); // Inicializar I2C en los pines GPIO 21 y 22
+  lcd.init();               // Inicializar el LCD
+  lcd.backlight();          // Encender la retroiluminación
+  
+  pinMode(soilMoisturePin, INPUT);
+  pinMode(relayPin, OUTPUT);    // Configurar el pin del relé como salida
+  digitalWrite(relayPin, LOW);  // Asegurarse de que el relé está apagado inicialmente
+  Serial.println("Iniciando lectura de sensor de humedad del suelo...");
+  
+  // Inicializar el arreglo de lecturas
+  for (int i = 0; i < numReadings; i++) {
+    soilMoistureReadings[i] = 0;
+  }
+}
+
+void loop() {
+  if (!client.connected()) {
+    while (!client.connect("ESP32Client")) {
+      Serial.print(".");
+      delay(500);
+    }
+    Serial.println("");
+    Serial.println("Conectado al broker MQTT");
+    client.subscribe(mqttTopicControl);
+  }
+
+  client.loop();
+
+  // Leer el valor analógico del sensor de humedad del suelo
+  int sensorValue = analogRead(soilMoisturePin);
+  
+  // Agregar la nueva lectura al total y restar la lectura más antigua
+  total = total - soilMoistureReadings[currentIndex] + sensorValue;
+  // Guardar la nueva lectura en el arreglo
+  soilMoistureReadings[currentIndex] = sensorValue;
+  // Incrementar el índice circular
+  currentIndex = (currentIndex + 1) % numReadings;
+  
+  // Calcular el promedio de las últimas numReadings lecturas
+  int averageValue = total / numReadings;
+  
+  // Mapear el valor promedio al rango 0-100
+  int soilMoisturePercent = map(averageValue, wetValue, dryValue, 100, 0);
+  
+  // Limitar el valor mapeado al rango 0-100
+  soilMoisturePercent = constrain(soilMoisturePercent, 0, 100);
+  
+  // Control del relé
+  bool relayState = digitalRead(relayPin) == HIGH;
+  
+  // Limpiar la pantalla LCD y colocar el cursor en la posición 0,0
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Humedad: ");
+  lcd.print(soilMoisturePercent);
+  lcd.print("%");
+  
+  // Imprimir el valor original y el valor mapeado en el monitor serie
+  Serial.print("Soil Moisture Value: ");
+  Serial.print(sensorValue);
+  Serial.print(" - Humedad: ");
+  Serial.print(soilMoisturePercent);
+  Serial.println("%");
+
+  // Publicar la humedad y el estado del relé en los tópicos MQTT
+  String humedadMessage = "Humedad: " + String(soilMoisturePercent) + "%";
+  String relayMessage = relayState ? "Relay ON" : "Relay OFF";
+  
+  client.publish(mqttTopicHumedad, humedadMessage.c_str());
+  client.publish(mqttTopicRelay, relayMessage.c_str());
+  
+  Serial.println("Mensaje de humedad publicado: " + humedadMessage);
+  Serial.println("Mensaje de relé publicado: " + relayMessage);
+
+  delay(1000); // 1 segundo
+}
