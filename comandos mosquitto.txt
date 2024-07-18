@@ -16,4 +16,4 @@ CMD 3: "(mosquitto_pub -h <IP> -t "prueba1883" -m "hola mundo" -d -i "yo")"
 
 Comando por si alguna otra tarea esta utilizando el puerto 1883 (EJECUTAR COMO ADMIN):
 CMD: "netstat -ano | findstr :1883"
-"taskkill /PID <PID> /F"
+"taskkill /PID <PID> /F".
