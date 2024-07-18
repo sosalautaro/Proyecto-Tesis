@@ -30,7 +30,7 @@ const int dryValue = 2525; // Valor correspondiente a suelo seco
 LiquidCrystal_I2C lcd(LCD_ADDRESS, 16, 2);
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   WiFi.begin(ssid, password);
 
