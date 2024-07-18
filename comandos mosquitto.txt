@@ -1,19 +1,19 @@
 Comando a ejecutar en un primer CMD para abrir la carpeta de mosquitto:
-cd c:/program files/mosquitto
+"cd c:/program files/mosquitto"
 
 Comandos para probar la comunicacion en 2 cmd:
 
-CMD 1: mosquitto_sub -h test.mosquitto.org -t "alsw/#" (# significa que escucha todo el canal alsw)
-CMD 2: mosquitto_pub -h test.mosquitto.org -t "alsw/led" -m "hola mundo"
+CMD 1: "(mosquitto_sub -h test.mosquitto.org -t "alsw/#" (# significa que escucha todo el canal alsw))"
+CMD 2: "(mosquitto_pub -h test.mosquitto.org -t "alsw/led" -m "hola mundo")"
 
 Comando para ejecutar mosquitto de manera local:
-CMD 1: mosquitto -c mosquitto.conf -v
+CMD 1: "(mosquitto -c mosquitto.conf -v)"
 
 Comandos para probar mosquitto en la red local:
 
-CMD 2: mosquitto_sub -h <IP> -t "prueba1883" -v -d
-CMD 3: mosquitto_pub -h <IP> -t "prueba1883" -m "hola mundo" -d -i "yo"
+CMD 2: "(mosquitto_sub -h <IP> -t "prueba1883" -v -d)"
+CMD 3: "(mosquitto_pub -h <IP> -t "prueba1883" -m "hola mundo" -d -i "yo")"
 
 Comando por si alguna otra tarea esta utilizando el puerto 1883 (EJECUTAR COMO ADMIN):
-CMD: netstat -ano | findstr :1883
-taskkill /PID <PID> /F
+CMD: "netstat -ano | findstr :1883"
+"taskkill /PID <PID> /F"
