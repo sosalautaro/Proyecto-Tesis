@@ -1,0 +1,79 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+const int soilMoisturePin = 34;   // GPIO34
+const int relayPin = 27;          // Pin GPIO para el relé, puedes cambiarlo según tu configuración
+const int numReadings = 10;       // Número de lecturas para la media móvil
+int soilMoistureReadings[numReadings]; // Arreglo para almacenar las lecturas
+int currentIndex = 0;             // Índice actual en el arreglo
+int total = 0;                    // Suma total de las lecturas
+
+const int wetValue = 900;  // Valor correspondiente a suelo húmedo
+const int dryValue = 2525;  // Valor correspondiente a suelo seco
+
+// Dirección I2C de la pantalla LCD (ajusta según tu dispositivo)
+#define LCD_ADDRESS 0x27
+
+// Configuración del LCD 16x2
+LiquidCrystal_I2C lcd(LCD_ADDRESS, 16, 2);
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin();
+  lcd.init();                      // Inicializar el LCD
+  lcd.backlight();                 // Encender la retroiluminación
+  
+  pinMode(soilMoisturePin, INPUT);
+  pinMode(relayPin, OUTPUT);       // Configurar el pin del relé como salida
+  digitalWrite(relayPin, LOW);     // Asegurarse de que el relé está apagado inicialmente
+  Serial.println("Iniciando lectura de sensor de humedad del suelo...");
+  
+  // Inicializar el arreglo de lecturas
+  for (int i = 0; i < numReadings; i++) {
+    soilMoistureReadings[i] = 0;
+  }
+}
+
+void loop() {
+  // Leer el valor analógico del sensor de humedad del suelo
+  int sensorValue = analogRead(soilMoisturePin);
+  
+  // Agregar la nueva lectura al total y restar la lectura más antigua
+  total = total - soilMoistureReadings[currentIndex] + sensorValue;
+  // Guardar la nueva lectura en el arreglo
+  soilMoistureReadings[currentIndex] = sensorValue;
+  // Incrementar el índice circular
+  currentIndex = (currentIndex + 1) % numReadings;
+  
+  // Calcular el promedio de las últimas numReadings lecturas
+  int averageValue = total / numReadings;
+  
+  // Mapear el valor promedio al rango 0-100
+  int soilMoisturePercent = map(averageValue, wetValue, dryValue, 100, 0);
+  
+  // Limitar el valor mapeado al rango 0-100
+  soilMoisturePercent = constrain(soilMoisturePercent, 0, 100);
+  
+  // Control del relé
+  if (soilMoisturePercent < 33) {
+    digitalWrite(relayPin, HIGH);  // Encender el relé
+  } else if (soilMoisturePercent >= 95) {
+    digitalWrite(relayPin, LOW);   // Apagar el relé
+  }
+  
+  // Limpiar la pantalla LCD y colocar el cursor en la posición 0,0
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Humedad: ");
+  lcd.print(soilMoisturePercent);
+  lcd.print("%");
+  
+  // Imprimir el valor original y el valor mapeado en el monitor serie
+  Serial.print("Soil Moisture Value: ");
+  Serial.print(sensorValue);
+  Serial.print(" - Humedad: ");
+  Serial.print(soilMoisturePercent);
+  Serial.println("%");
+  
+  delay(1000);  // 1 segundo
+}
