@@ -1,0 +1,90 @@
+#include <ESP8266WiFi.h>
+#include <PubSubClient.h>
+
+// Configuración WiFi
+const char* ssid = "CLARO602";          // Reemplaza con el nombre de tu red WiFi
+const char* password = "20843789";  // Reemplaza con la contraseña de tu red WiFi
+
+// Configuración MQTT
+const char* mqttServer = "192.168.1.8"; // Reemplaza con la IP de tu broker MQTT
+const int mqttPort = 1883;
+const char* mqttTopicRelay = "sensor/control";  // Tópico MQTT para controlar el relé
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+const int relayPin = 0; // Pin GPIO5 para el relé
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(relayPin, OUTPUT);
+  digitalWrite(relayPin, LOW); // Asegúrate de que el relé esté apagado inicialmente
+
+  setup_wifi();
+  client.setServer(mqttServer, mqttPort);
+  client.setCallback(callback);
+}
+
+void setup_wifi() {
+  delay(10);
+  Serial.println();
+  Serial.print("Conectando a ");
+  Serial.println(ssid);
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi conectado");
+  Serial.println("IP local: ");
+  Serial.println(WiFi.localIP());
+}
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  String message;
+  for (unsigned int i = 0; i < length; i++) {
+    message += (char)payload[i];
+  }
+
+  Serial.print("Mensaje recibido en tópico: ");
+  Serial.println(topic);
+  Serial.print("Contenido: ");
+  Serial.println(message);
+
+  if (String(topic) == mqttTopicRelay) {
+    if (message == "true") {
+      digitalWrite(relayPin, HIGH); // Encender el relé
+      Serial.println("Relé activado vía MQTT");
+    } else if (message == "false") {
+      digitalWrite(relayPin, LOW); // Apagar el relé
+      Serial.println("Relé desactivado vía MQTT");
+    }
+  }
+}
+
+void reconnect() {
+  while (!client.connected()) {
+    Serial.print("Intentando conexión MQTT...");
+    if (client.connect("ESP8266Client")) {
+      Serial.println("Conectado");
+      client.subscribe(mqttTopicRelay);
+    } else {
+      Serial.print("Falló, rc=");
+      Serial.print(client.state());
+      Serial.println(" intentando de nuevo en 5 segundos");
+      delay(5000);
+    }
+  }
+}
+
+void loop() {
+  if (!client.connected()) {
+    reconnect();
+  }
+  client.loop();
+}
