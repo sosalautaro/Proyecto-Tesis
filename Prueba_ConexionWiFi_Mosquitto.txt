@@ -1,0 +1,50 @@
+#include <WiFi.h>
+#include <PubSubClient.h>
+
+const char* ssid = "tu_SSID";
+const char* password = "tu_contraseña";
+const char* mqttServer = "<IP>"; // Reemplaza con la IP de tu broker (en este caso se ejecuto de manera local asi que seria la IPV4
+const int mqttPort = 1883;
+const char* mqttTopic = "prueba1883";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+void setup() {
+  Serial.begin(115200);
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi conectado");
+  Serial.println("IP local:");
+  Serial.println(WiFi.localIP());
+
+  client.setServer(mqttServer, mqttPort);
+}
+
+void loop() {
+  if (!client.connected()) {
+    while (!client.connect("ESP32Client")) {
+      Serial.print(".");
+      delay(500);
+    }
+
+    Serial.println("");
+    Serial.println("Conectado al broker MQTT");
+  }
+
+  client.loop();
+
+  // Publica un mensaje cada 5 segundos
+  String message = "Hola desde ESP32";
+  client.publish(mqttTopic, message.c_str());
+  Serial.println("Mensaje publicado: " + message);
+
+  delay(5000);
+}
