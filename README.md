@@ -1,24 +1,35 @@
-Este proyecto nace de la idea de realizar un sistema de riego automatizado inspirado en "home assistant"
-para lo cual se considero que los componenetes mas optimos serian: 
--ESP32
--RELAY MONOCANAL WIFI - ESP8266
--CAPACITIVE SOIL MOISTURE SENSOR
--MINI BOMBA DE AGUA 5V 80/120 Lh
--PANTALLA LCD I2C 16X2.
+# Proyecto de Sistema de Riego Automatizado
 
-Plataforma encargada del manejo del broker mosquitto:
-Node-Red
+Este proyecto nace de la idea de realizar un sistema de riego automatizado inspirado en "Home Assistant". Los componentes seleccionados para este proyecto son los siguientes:
 
-La funcion del proyecto es tal que se coloca el "CAPACITIVE SOIL MOISTURE SENSOR" dentro de una maceta para medir la humedad, esta
-humedad es trasladada al "ESP32" el cual imprime la informacion en la "PANTALLA LCD I2C 16X2" y a su vez envia la informacion a node-red 
-donde este se encargara de expresarla en un "gauge" propio de la plataforma previamente configurado.
+- ESP32
+- RELAY MONOCANAL WIFI - ESP8266
+- CAPACITIVE SOIL MOISTURE SENSOR
+- MINI BOMBA DE AGUA 5V 80/120 Lh
+- PANTALLA LCD I2C 16X2
 
-En base a esta informacion se puede elegir si encender el "RELAY MONOCANAL WIFI - ESP8266" que controla el encendido de la bomba de agua para dar incio al riego e ir
-viendo como aumenta la humedad de la tierra en la maceta como asi se puede apreciar segun lo detallado en su codigo de programacion. (Codigo_ESP32_Control_Relay).
+La plataforma encargada del manejo del broker Mosquitto es **Node-Red**.
 
-Este puede encenderse y apagarse de forma manual, o encenderlo y solo se apagara al indicar un porcentaje de humedad igual o superior al 90%.
-esto ultimo esta detallado en el codigo final del "ESP32" . (codigo final en funcionamiento). 
+## Funcionamiento del Proyecto
 
+El sistema funciona de la siguiente manera:
 
-los codigos aqui desarrollados conllevan una serie de pruebas paso por paso para verificar el correcto funcionamiento de los componentes,
-se realizo de esta manera ya que es el primer contacto con el mundo de los broker, protocolos mqtt, node-red, dashboard, etc.
+1. **Medición de Humedad**:
+    - El **CAPACITIVE SOIL MOISTURE SENSOR** se coloca dentro de una maceta para medir la humedad del suelo.
+    - Esta información se envía al **ESP32**.
+
+2. **Visualización de Datos**:
+    - El **ESP32** imprime la información de humedad en la **PANTALLA LCD I2C 16X2**.
+    - También envía la información a **Node-Red**, donde se muestra en un "gauge" configurado en la plataforma.
+
+3. **Control del Riego**:
+    - En base a la información recibida, se puede elegir si encender el **RELAY MONOCANAL WIFI - ESP8266** que controla el encendido de la bomba de agua.
+    - La bomba de agua riega la planta, y se puede observar cómo aumenta la humedad del suelo en la maceta.
+
+4. **Modos de Operación**:
+    - El riego puede activarse y desactivarse manualmente.
+    - También puede configurarse para que el sistema se apague automáticamente al alcanzar un porcentaje de humedad igual o superior al 90%. Esto está detallado en el código final del **ESP32**.
+
+## Pruebas y Desarrollo
+
+Los códigos desarrollados para este proyecto conllevan una serie de pruebas paso a paso para verificar el correcto funcionamiento de los componentes. Este enfoque se adoptó debido a que es el primer contacto con el mundo de los brokers, protocolos MQTT, Node-Red, dashboards, etc.
